@@ -71,7 +71,15 @@ lemma equals_is_transitive_with_dafny_equals(n1: Nat, n2: Nat, n3: Nat)
 {}
 
 lemma equals_is_transitive_with_own_equals(n1: Nat, n2: Nat, n3: Nat)
-	ensures equals1(n1, n2) == equals1(n2, n3) ==> equals1(n1, n3);
-{}
+	ensures equals1(n1, n2) && equals1(n2, n3) ==> equals1(n1, n3);
+{
+	if (n1.Zero? || n2.Zero? || n3.Zero?) {
+		assert equals1(n1, n2) && equals1(n2, n3) ==> equals1(n1, n3);
+	} else {
+		equals_is_transitive_with_own_equals(n1.n, n2.n, n3.n);
+		assert equals1(n1, n2) && equals1(n2, n3) ==> equals1(n1, n3);
+	}
+
+}
 
 // equals(n1, n2) && equals(n2, n3) ==> equals(n1, n3)

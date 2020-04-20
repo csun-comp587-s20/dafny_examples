@@ -44,3 +44,34 @@ lemma lessThan_is_transitive(n1: Nat, n2: Nat, n3: Nat)
 		assert lessThan(n1, n2) && lessThan(n2, n3) ==> lessThan(n1, n3);
 	}
 }
+
+// equals
+// equals(0, 0): true
+// equals(n1 + 1, n2 + 1): equals(n1, n2)
+// equals(_, _): false
+function method equals1(n1: Nat, n2: Nat): bool
+{
+	if (n1.Zero? && n2.Zero?) then true else
+		(if (n1.Zero? || n2.Zero?) then false else equals1(n1.n, n2.n))
+}
+
+function method equals2(n1: Nat, n2: Nat): bool
+{
+	if (n1.Zero? && n2.Zero?) then true else
+		(if (n1.Succ? && n2.Succ?) then equals2(n1.n, n2.n) else false)
+}
+
+lemma equals1_is_equivalent_to_equals2(n1: Nat, n2: Nat)
+	ensures equals1(n1, n2) == equals2(n1, n2);
+{
+}
+
+lemma equals_is_transitive_with_dafny_equals(n1: Nat, n2: Nat, n3: Nat)
+	ensures n1 == n2 && n2 == n3 ==> n1 == n3;
+{}
+
+lemma equals_is_transitive_with_own_equals(n1: Nat, n2: Nat, n3: Nat)
+	ensures equals1(n1, n2) == equals1(n2, n3) ==> equals1(n1, n3);
+{}
+
+// equals(n1, n2) && equals(n2, n3) ==> equals(n1, n3)

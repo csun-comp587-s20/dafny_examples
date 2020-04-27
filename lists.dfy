@@ -59,6 +59,7 @@ ghost method testGetElementAtIndex() {
 }
 
 function method listToSeq<A>(list: List<A>): seq<A>
+	ensures length(list) == |listToSeq(list)|;
 {
 	if (list.Nil?) then [] else [list.head] + listToSeq(list.tail)
 }
@@ -78,10 +79,32 @@ function method take<A>(list: List<A>, amount: int): List<A>
 	ensures length(take(list, amount)) == amount;
 	ensures forall i :: 0 <= i < amount ==>
 		getElementAtIndex(list, i) == getElementAtIndex(take(list, amount), i);
-  //ensures listToSeq(list)[..amount - 1] == listToSeq(take(list, amount));
+  ensures listToSeq(list)[..amount] == listToSeq(take(list, amount));
 	// 1.) define the body of take
 	//     - Need recursion
 	// 2.) postconditions
 {
 	if (amount == 0) then Nil else Cons(list.head, take(list.tail, amount - 1))
+}
+
+function method drop<A>(list: List<A>, amount: int): List<A>
+	requires 0 <= amount <= length(list);
+	//                          amount +      length(list) - amount == length(list);
+	//ensures length(take(list, amount)) + length(drop(list, amount)) == length(list);
+	ensures length(drop(list, amount)) == length(list) - amount;
+	ensures listToSeq(list)[amount..] == listToSeq(drop(list, amount));
+{
+	// TODO: implement me
+	Nil
+}
+
+// append([], [1, 2, 3]) == [1, 2, 3]
+// append([1, 2, 3], []) == [1, 2, 3]
+// append([1, 2], [3, 4]) == [1, 2, 3, 4]
+// Hints:
+//  -Empty list appended onto any other list L returns L
+//  -Non-empty list appended onto any other list L... recursively call append with the
+//   rest of the non-empty list
+function method append<A>(l1: List<A>, l2: List<A>): List<A>
+{
 }

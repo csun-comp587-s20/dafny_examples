@@ -75,6 +75,7 @@ function method listToSeq<A>(list: List<A>): seq<A>
 // take([9, 3, 4], 5) == <<INVALID>>
 //
 function method take<A>(list: List<A>, amount: int): List<A>
+	decreases amount;
 	requires 0 <= amount <= length(list);
 	ensures length(take(list, amount)) == amount;
 	ensures forall i :: 0 <= i < amount ==>
@@ -87,24 +88,90 @@ function method take<A>(list: List<A>, amount: int): List<A>
 	if (amount == 0) then Nil else Cons(list.head, take(list.tail, amount - 1))
 }
 
-function method drop<A>(list: List<A>, amount: int): List<A>
-	requires 0 <= amount <= length(list);
-	//                          amount +      length(list) - amount == length(list);
-	//ensures length(take(list, amount)) + length(drop(list, amount)) == length(list);
-	ensures length(drop(list, amount)) == length(list) - amount;
-	ensures listToSeq(list)[amount..] == listToSeq(drop(list, amount));
-{
-	// TODO: implement me
-	Nil
-}
+// function method drop<A>(list: List<A>, amount: int): List<A>
+// 	requires 0 <= amount <= length(list);
+// 	//                          amount +      length(list) - amount == length(list);
+// 	//ensures length(take(list, amount)) + length(drop(list, amount)) == length(list);
+// 	ensures length(drop(list, amount)) == length(list) - amount;
+// 	ensures listToSeq(list)[amount..] == listToSeq(drop(list, amount));
+// {
+// 	// TODO: implement me
+// 	Nil
+// }
 
 // append([], [1, 2, 3]) == [1, 2, 3]
 // append([1, 2, 3], []) == [1, 2, 3]
+// append([1, 2], [3]) == [1, 2, 3]
 // append([1, 2], [3, 4]) == [1, 2, 3, 4]
 // Hints:
 //  -Empty list appended onto any other list L returns L
 //  -Non-empty list appended onto any other list L... recursively call append with the
 //   rest of the non-empty list
+//  -You only need one if
 function method append<A>(l1: List<A>, l2: List<A>): List<A>
 {
+	// if in the else: l1: Cons(...)
+	// l2: ???
+	// append([1, 2], [3, 4]) == Cons(1, append([2], [3, 4]));
+	if (l1.Nil?) then l2 else Cons(l1.head, append(l1.tail, l2))
 }
+
+ghost method test_append() {
+	// append([1, 2], [3, 4]) == [1, 2, 3, 4]
+	assert append(Cons(1, Cons(2, Nil)), Cons(3, Cons(4, Nil))) == Cons(1, Cons(2, Cons(3, Cons(4, Nil))));
+}
+
+// zip: is generic in both input lists
+//   zip(List<Int>, List<String>) = List<(Int, String)>
+// zip: both inputs must be the same length
+// zip: output list should be the same length as the input lists
+
+// proven:
+//   -Selection sort
+//   -Merge sort
+//   -Quicksort
+
+// []
+// [12]
+
+// [1, 2, 3, ...]
+// 1 <= 2
+// is_sorted([2, 3, ...])
+predicate is_sorted(list: List<int>)
+{
+	(list.Nil? ==> true) &&
+  (list.Cons? && list.tail.Nil? ==> true) &&
+	(list.Cons? && list.tail.Cons? ==> list.head <= list.tail.head	&& is_sorted(list.tail))
+}
+
+ghost method test_is_sorted() {
+	assert is_sorted(Nil); // []
+	assert is_sorted(Cons(1, Nil)); // [1]
+	assert is_sorted(Cons(1, Cons(2, Nil))); // [1, 2]
+	assert is_sorted(Cons(1, Cons(2, Cons(3, Nil)))); // [1, 2, 3]
+}
+
+// merge([], [1, 2, 3]) = [1, 2, 3]
+// merge([1, 2, 3], []) = [1, 2, 3]
+// merge([1, 3, 5], [2, 3]) == Cons(1, merge([3, 5], [2, 3]))
+function method merge(l1: List<int>, l2: List<int>): List<int>
+	requires is_sorted(l1);
+	requires is_sorted(l2);
+	ensures is_sorted(merge(l1, l2));
+{
+	if (l1.Nil?) then l2 else
+		(if (l2.Nil?) then l1 else
+		(if (l1.head <= l2.head) then Cons(l1.head, merge(l1.tail, l2)) else
+		                              Cons(l2.head, merge(l1, l2.tail))))
+}
+
+// O(nlg(n))
+// def merge_sort(list):
+//   if length(list) < 2:
+//     return list
+//   else:
+//     (l1, l2) = split_list_in_two(list) // O(lg(n))
+//     sortedL1 = merge_sort(l1)
+//     sortedL2 = merge_sort(l2)
+//     sortedList = merge(sortedL1, sortedL2) // O(n)
+//     return sortedList

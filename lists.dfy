@@ -2,6 +2,8 @@
 // Cons: non-empty list (Node)
 datatype List<A> = Nil | Cons(head: A, tail: List<A>)
 
+datatype Pair<A, B> = Pair(fst: A, snd: B)
+
 // []: Nil
 // [1]: Cons(1, Nil)
 // [1, 2]: Cons(1, Cons(2, Nil))
@@ -151,13 +153,22 @@ ghost method test_is_sorted() {
 	assert is_sorted(Cons(1, Cons(2, Cons(3, Nil)))); // [1, 2, 3]
 }
 
+function method list_as_multiset<A>(list: List<A>): multiset<A>
+{
+	if (list.Nil?) then multiset{} else
+		list_as_multiset(list.tail) + multiset{list.head}
+}
+
 // merge([], [1, 2, 3]) = [1, 2, 3]
 // merge([1, 2, 3], []) = [1, 2, 3]
 // merge([1, 3, 5], [2, 3]) == Cons(1, merge([3, 5], [2, 3]))
 function method merge(l1: List<int>, l2: List<int>): List<int>
-	requires is_sorted(l1);
-	requires is_sorted(l2);
-	ensures is_sorted(merge(l1, l2));
+	requires is_sorted(l1); // two 1s
+	requires is_sorted(l2); // three 1s
+	ensures is_sorted(merge(l1, l2)); // five 1s
+	ensures list_as_multiset(l1) + list_as_multiset(l2) == list_as_multiset(merge(l1, l2));
+	// every element from l1 should be in the result list
+	// every element from l2 should be in the result list
 {
 	if (l1.Nil?) then l2 else
 		(if (l2.Nil?) then l1 else
@@ -175,3 +186,42 @@ function method merge(l1: List<int>, l2: List<int>): List<int>
 //     sortedL2 = merge_sort(l2)
 //     sortedList = merge(sortedL1, sortedL2) // O(n)
 //     return sortedList
+
+// splitAt([10, 11, 12, 13], 0) = Pair(Nil, [10, 11, 12, 13])
+function method splitAt<A>(list: List<A>, at: int): Pair<List<A>, List<A>>
+	//requires length(list) >= 2;
+	requires 0 <= at < length(list);
+	ensures length(list) == length(splitAt(list, at).fst) + length(splitAt(list, at).snd);
+	ensures list == append(splitAt(list, at).fst, splitAt(list, at).snd);
+	ensures list_as_multiset(list) == list_as_multiset(append(splitAt(list, at).fst, splitAt(list, at).snd));
+	ensures length(splitAt(list, at).fst) == at;
+	ensures length(splitAt(list, at).snd) == length(list) - at;
+{
+	if (at == 0) then Pair(Nil, list) else
+		(var rest := splitAt(list.tail, at - 1);
+		 Pair(Cons(list.head, rest.fst), rest.snd))
+}
+
+function method splitListInTwo<A>(list: List<A>): Pair<List<A>, List<A>>
+	requires length(list) > 1;
+{
+	// 0 / 2: 0
+	// 1 / 2: 0
+	// 2 / 2: 1
+	// 3 / 2: 1
+	splitAt(list, length(list) / 2)
+}
+
+method mergeSort(list: List<int>) returns (result: List<int>)
+	ensures is_sorted(result);
+	ensures list_as_multiset(list) == list_as_multiset(result);
+{
+	if (length(list) < 2) {
+		result := list;
+	} else {
+		var split := splitListInTwo(list);
+		var sortedLeft := mergeSort(split.fst);
+		var sortedRight := mergeSort(split.snd);
+		result := merge(sortedLeft, sortedRight);
+	}
+}
